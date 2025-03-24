@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/auth';
 import notificationService from '../services/notifications';
+import '../styles.css';
 
 const Navbar = ({ onSearch, onClearSearch }) => {
   const [user, setUser] = useState(null);
@@ -103,7 +104,7 @@ const Navbar = ({ onSearch, onClearSearch }) => {
     top: '100%',
     right: 0,
     marginTop: '0.5rem',
-    zIndex: 1050, // Higher z-index to ensure it appears above other elements
+    zIndex: 1050, 
     width: '300px',
     maxHeight: '400px',
     overflow: 'hidden',
@@ -140,9 +141,9 @@ const Navbar = ({ onSearch, onClearSearch }) => {
   }, [showNotifications]);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom py-2">
       <div className="container">
-        <Link className="navbar-brand" to="/" onClick={handleNavigation}>Discussion Forum</Link>
+        <Link className="navbar-brand fw-bold" to="/" onClick={handleNavigation}>Discussion Forum</Link>
         
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span className="navbar-toggler-icon"></span>
@@ -153,95 +154,111 @@ const Navbar = ({ onSearch, onClearSearch }) => {
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={handleNavigation}>Home</Link>
             </li>
-            {user && (
-              <li className="nav-item">
-                <Link className="nav-link" to="/topics/new">New Topic</Link>
-              </li>
-            )}
           </ul>
           
-          <form className="d-flex me-3" onSubmit={handleSearch}>
-            <input
-              className="form-control me-2"
-              type="search"
-              placeholder="Search topics..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button className="btn btn-outline-light" type="submit">Search</button>
-          </form>
-          
-          {user ? (
-            <div className="d-flex align-items-center">
-              <div className="position-relative me-3">
+          <div className="d-flex align-items-center">
+            <form className="d-flex me-3" onSubmit={handleSearch}>
+              <div className="input-group">
+                <input
+                  className="form-control"
+                  type="search"
+                  placeholder="Search topics..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+                />
                 <button 
-                  id="notifications-button"
-                  className="btn btn-outline-light position-relative"
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="btn btn-dark" 
+                  type="submit"
+                  style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
                 >
-                  <i className="bi bi-bell"></i>
-                  {unreadCount > 0 && (
-                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                      {unreadCount}
-                    </span>
-                  )}
+                  Search
                 </button>
-                
-                {showNotifications && (
-                  <div 
-                    id="notifications-dropdown"
-                    style={notificationDropdownStyle}
+              </div>
+            </form>
+            
+            {user ? (
+              <div className="d-flex align-items-center">
+                <div className="position-relative me-3">
+                  <button 
+                    id="notifications-button"
+                    className="btn btn-outline-dark position-relative"
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    style={{ height: '38px', width: '38px', padding: '6px' }}
                   >
-                    <div className="card" style={notificationCardStyle}>
-                      <div className="card-header d-flex justify-content-between align-items-center">
-                        <span>Notifications</span>
-                        {unreadCount > 0 && (
-                          <button className="btn btn-sm btn-link" onClick={markAllAsRead}>
-                            Mark all as read
-                          </button>
-                        )}
+                    <i className="bi bi-bell"></i>
+                    {unreadCount > 0 && (
+                      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
+                        {unreadCount}
+                        <span className="visually-hidden">unread notifications</span>
+                      </span>
+                    )}
+                  </button>
+                  
+                  {showNotifications && (
+                    <div 
+                      id="notifications-dropdown"
+                      style={notificationDropdownStyle}
+                    >
+                      <div className="card" style={notificationCardStyle}>
+                        <div className="card-header d-flex justify-content-between align-items-center bg-white">
+                          <span className="fw-bold">Notifications</span>
+                          {unreadCount > 0 && (
+                            <button className="btn btn-sm btn-link text-dark p-0" onClick={markAllAsRead}>
+                              Mark all as read
+                            </button>
+                          )}
+                        </div>
+                        <ul className="list-group list-group-flush">
+                          {notifications.length > 0 ? (
+                            notifications.map(notification => (
+                              <li 
+                                key={notification.id} 
+                                className={`list-group-item ${!notification.is_read ? 'bg-light' : ''}`}
+                                onClick={() => handleNotificationClick(notification)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div className="small text-muted">
+                                  {new Date(notification.created_at).toLocaleString()}
+                                </div>
+                                <div>{notification.message}</div>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="list-group-item text-center">No notifications</li>
+                          )}
+                        </ul>
                       </div>
-                      <ul className="list-group list-group-flush">
-                        {notifications.length > 0 ? (
-                          notifications.map(notification => (
-                            <li 
-                              key={notification.id} 
-                              className={`list-group-item ${!notification.is_read ? 'bg-light' : ''}`}
-                              onClick={() => handleNotificationClick(notification)}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              <div className="small text-muted">
-                                {new Date(notification.created_at).toLocaleString()}
-                              </div>
-                              <div>{notification.message}</div>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="list-group-item text-center">No notifications</li>
-                        )}
-                      </ul>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+                
+                <div className="dropdown">
+                  <button 
+                    className="btn btn-outline-dark dropdown-toggle" 
+                    type="button" 
+                    id="userDropdown" 
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style={{ height: '38px' }}
+                  >
+                    {user.username}
+                  </button>
+                  <ul className="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+                    <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
+                    <li><Link className="dropdown-item" to="/topics/new">Create New Topic</Link></li>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
+                  </ul>
+                </div>
               </div>
-              
-              <div className="dropdown">
-                <button className="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                  {user.username}
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  <li><Link className="dropdown-item" to="/profile">Profile</Link></li>
-                  <li><hr className="dropdown-divider" /></li>
-                  <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
-                </ul>
+            ) : (
+              <div className="d-flex align-items-center">
+                <Link to="/login" className="btn btn-outline-dark me-2" style={{ height: '38px' }}>Login</Link>
+                <Link to="/register" className="btn btn-dark" style={{ height: '38px' }}>Register</Link>
               </div>
-            </div>
-          ) : (
-            <div>
-              <Link to="/login" className="btn btn-outline-light me-2">Login</Link>
-              <Link to="/register" className="btn btn-light">Register</Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </nav>

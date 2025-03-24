@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Topic from '../components/Topic';
 import { topicAPI } from '../services/api';
 import authService from '../services/auth';
+import '../styles.css';
 
 const Home = ({ searchQuery }) => {
   const [topics, setTopics] = useState([]);
@@ -99,9 +100,9 @@ const Home = ({ searchQuery }) => {
               ))}
               
               {hasMore && (
-                <div className="text-center mt-4">
+                <div className="text-center mt-4 mb-4">
                   <button 
-                    className="btn btn-outline-primary"
+                    className="btn btn-dark"
                     onClick={loadMore}
                     disabled={loading}
                   >
@@ -118,7 +119,7 @@ const Home = ({ searchQuery }) => {
                 <div>
                   <p className="mb-3">No topics found.</p>
                   {user && (
-                    <Link to="/topics/new" className="btn btn-primary">
+                    <Link to="/topics/new" className="btn btn-dark">
                       Create New Topic
                     </Link>
                   )}
@@ -129,7 +130,7 @@ const Home = ({ searchQuery }) => {
         </div>
         
         <div className="col-md-4">
-          <div className="card mb-4">
+          <div className="card trending-topics-card">
             <div className="card-header">
               <h5 className="mb-0">Trending Topics</h5>
             </div>
@@ -137,11 +138,11 @@ const Home = ({ searchQuery }) => {
               {trendingTopics.length > 0 ? (
                 trendingTopics.map(topic => (
                   <li key={topic.id} className="list-group-item">
-                    <Link to={`/topics/${topic.id}`} className="text-decoration-none">
+                    <Link to={`/topics/${topic.id}`}>
                       {topic.title}
                     </Link>
-                    <div className="small text-muted">
-                      <i className="bi bi-eye me-1"></i>
+                    <div className="view-count">
+                      <i className="bi bi-eye"></i>
                       {topic.score} views
                     </div>
                   </li>
@@ -152,23 +153,25 @@ const Home = ({ searchQuery }) => {
             </ul>
           </div>
           
-          {user ? (
-            <div className="card">
+          {!user && (
+            <div className="card join-card">
               <div className="card-body">
-                <h5 className="card-title">Start a Discussion</h5>
-                <p className="card-text">Have a question or something to share?</p>
-                <Link to="/topics/new" className="btn btn-primary">
-                  Create New Topic
+                <h3>Join the Discussion</h3>
+                <p>Sign in to participate in discussions and receive notifications.</p>
+                <Link to="/login" className="btn btn-dark">
+                  Sign In
                 </Link>
               </div>
             </div>
-          ) : (
+          )}
+          
+          {user && (
             <div className="card">
-              <div className="card-body">
-                <h5 className="card-title">Join the Discussion</h5>
-                <p className="card-text">Sign in to participate in discussions and receive notifications.</p>
-                <Link to="/login" className="btn btn-primary">
-                  Sign In
+              <div className="card-body text-center">
+                <h5 className="card-title">Start a Discussion</h5>
+                <p className="card-text">Have a question or something to share?</p>
+                <Link to="/topics/new" className="btn btn-dark">
+                  Create New Topic
                 </Link>
               </div>
             </div>
