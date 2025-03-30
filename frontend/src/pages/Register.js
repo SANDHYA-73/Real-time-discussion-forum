@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/auth';
+import { useAuth } from '../services/auth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +12,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { authService, setUser } = useAuth();
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,11 +55,12 @@ const Register = () => {
       });
       
       // Login automatically
-      await authService.login({
+      const userData = await authService.login({
         email: formData.email,
         password: formData.password
       });
       
+      setUser(userData); // Update context
       navigate('/');
     } catch (err) {
       setError(err.detail || 'Registration failed. Please try again.');
@@ -73,7 +75,7 @@ const Register = () => {
       <div className="row justify-content-center">
         <div className="col-md-6">
           <div className="card">
-            <div className="card-header bg-primary text-white">
+            <div className="card-header bg-white">
               <h4 className="mb-0">Register</h4>
             </div>
             <div className="card-body">
@@ -139,7 +141,7 @@ const Register = () => {
                 <div className="d-grid">
                   <button 
                     type="submit" 
-                    className="btn btn-primary"
+                    className="btn btn-dark"
                     disabled={loading}
                   >
                     {loading ? 'Registering...' : 'Register'}
@@ -147,9 +149,9 @@ const Register = () => {
                 </div>
               </form>
             </div>
-            <div className="card-footer text-center">
+            <div className="card-footer bg-white text-center">
               <p className="mb-0">
-                Already have an account? <Link to="/login">Login</Link>
+                Already have an account? <Link to="/login" className="text-dark">Login</Link>
               </p>
             </div>
           </div>

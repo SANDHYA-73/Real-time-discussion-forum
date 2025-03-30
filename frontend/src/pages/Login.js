@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/auth';
+import { useAuth } from '../services/auth';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { authService, setUser } = useAuth();
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,7 +27,8 @@ const Login = () => {
       setLoading(true);
       setError(null);
       
-      await authService.login(formData);
+      const userData = await authService.login(formData);
+      setUser(userData); // Update context state
       navigate('/');
     } catch (err) {
       setError(err.detail || 'Login failed. Please check your credentials and try again.');
@@ -41,7 +43,7 @@ const Login = () => {
       <div className="row justify-content-center">
         <div className="col-md-6">
           <div className="card">
-            <div className="card-header bg-primary text-white">
+            <div className="card-header bg-white">
               <h4 className="mb-0">Login</h4>
             </div>
             <div className="card-body">
@@ -81,7 +83,7 @@ const Login = () => {
                 <div className="d-grid">
                   <button 
                     type="submit" 
-                    className="btn btn-primary"
+                    className="btn btn-dark"
                     disabled={loading}
                   >
                     {loading ? 'Logging in...' : 'Login'}
@@ -89,9 +91,9 @@ const Login = () => {
                 </div>
               </form>
             </div>
-            <div className="card-footer text-center">
+            <div className="card-footer bg-white text-center">
               <p className="mb-0">
-                Don't have an account? <Link to="/register">Register</Link>
+                Don't have an account? <Link to="/register" className="text-dark">Register</Link>
               </p>
             </div>
           </div>

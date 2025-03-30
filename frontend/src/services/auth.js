@@ -1,6 +1,10 @@
 import api from './api';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-// Auth service
+// Create an auth context
+export const AuthContext = createContext(null);
+
+// Auth service - keeping the original functions
 const authService = {
   register: async (userData) => {
     try {
@@ -23,6 +27,9 @@ const authService = {
       const userResponse = await api.get('/users/me');
       localStorage.setItem('user', JSON.stringify(userResponse.data));
       
+      // Trigger any global event listeners for auth state change
+      window.dispatchEvent(new Event('auth-change'));
+      
       return userResponse.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -32,6 +39,9 @@ const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // Trigger any global event listeners for auth state change
+    window.dispatchEvent(new Event('auth-change'));
   },
   
   getCurrentUser: () => {
@@ -47,11 +57,48 @@ const authService = {
     try {
       const response = await api.put('/users/me', userData);
       localStorage.setItem('user', JSON.stringify(response.data));
+      
+      // Trigger any global event listeners for auth state change
+      window.dispatchEvent(new Event('auth-change'));
+      
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 };
+
+// Auth provider component
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(authService.getCurrentUser());
+  // const [loading, setLoading] = useState(false);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setUser(authService.getCurrentUser());
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, []);
+
+  // Value to provide in context
+  const value = {
+    user,
+    authService,
+    setUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// Hook to use auth context
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export default authService;

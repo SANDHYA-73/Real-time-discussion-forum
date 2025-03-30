@@ -3,11 +3,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import './styles.css';
 
 // Components
 import Navbar from './components/Navbar';
-
-import './styles.css';
 
 // Pages
 import Home from './pages/Home';
@@ -17,17 +16,18 @@ import Profile from './pages/Profile';
 import TopicDetail from './pages/TopicDetail';
 import NewTopic from './pages/NewTopic';
 
-// Services
-import authService from './services/auth';
+// Auth context
+import { useAuth } from './services/auth';
 
 // Private Route component
 const PrivateRoute = ({ children }) => {
-  const isAuthenticated = authService.isAuthenticated();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
 };
 
 const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useAuth();
   
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -45,8 +45,12 @@ const App = () => {
         <main className="flex-grow-1">
           <Routes>
             <Route path="/" element={<Home searchQuery={searchQuery} />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={
+              user ? <Navigate to="/" /> : <Login />
+            } />
+            <Route path="/register" element={
+              user ? <Navigate to="/" /> : <Register />
+            } />
             <Route path="/profile" element={
               <PrivateRoute>
                 <Profile />
@@ -61,17 +65,17 @@ const App = () => {
           </Routes>
         </main>
         
-        <footer className="bg-dark text-white py-4 mt-auto">
+        <footer className="bg-light text-dark py-4 mt-auto border-top">
           <div className="container">
             <div className="row">
               <div className="col-md-6">
                 <h5>Real-Time Discussion Forum</h5>
-                <p className="mb-0">
+                <p className="mb-0 text-muted">
                   A platform for discussions with real-time updates.
                 </p>
               </div>
               <div className="col-md-6 text-md-end">
-                <p className="mb-0">
+                <p className="mb-0 text-muted">
                   &copy; {new Date().getFullYear()} Discussion Forum
                 </p>
               </div>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/auth';
 import notificationService from '../services/notifications';
+import { useAuth } from '../services/auth';
 import '../styles.css';
 
 const Navbar = ({ onSearch, onClearSearch }) => {
-  const [user, setUser] = useState(null);
+  const { user, authService } = useAuth();
   const [query, setQuery] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -13,15 +13,12 @@ const Navbar = ({ onSearch, onClearSearch }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-
-    if (currentUser) {
+    if (user) {
       // Load notifications
       loadNotifications();
       
       // Connect to WebSocket for real-time notifications
-      const socket = notificationService.connect(currentUser.id);
+      const socket = notificationService.connect(user.id);
       socket.onmessage = (event) => {
         const newNotification = JSON.parse(event.data);
         setNotifications(prev => [newNotification, ...prev]);
@@ -32,7 +29,7 @@ const Navbar = ({ onSearch, onClearSearch }) => {
         notificationService.disconnect();
       };
     }
-  }, []);
+  }, [user]);
   
   const loadNotifications = async () => {
     try {
@@ -60,7 +57,6 @@ const Navbar = ({ onSearch, onClearSearch }) => {
   
   const handleLogout = () => {
     authService.logout();
-    setUser(null);
     navigate('/login');
   };
   
