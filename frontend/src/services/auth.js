@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 // Create an auth context
 export const AuthContext = createContext(null);
 
-// Auth service - keeping the original functions
+// Auth service with existing functionality
 const authService = {
   register: async (userData) => {
     try {
@@ -27,7 +27,7 @@ const authService = {
       const userResponse = await api.get('/users/me');
       localStorage.setItem('user', JSON.stringify(userResponse.data));
       
-      // Trigger any global event listeners for auth state change
+      // Trigger global event for auth state change
       window.dispatchEvent(new Event('auth-change'));
       
       return userResponse.data;
@@ -40,7 +40,7 @@ const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
-    // Trigger any global event listeners for auth state change
+    // Trigger global event for auth state change
     window.dispatchEvent(new Event('auth-change'));
   },
   
@@ -58,7 +58,7 @@ const authService = {
       const response = await api.put('/users/me', userData);
       localStorage.setItem('user', JSON.stringify(response.data));
       
-      // Trigger any global event listeners for auth state change
+      // Trigger global event for auth state change
       window.dispatchEvent(new Event('auth-change'));
       
       return response.data;
@@ -70,13 +70,12 @@ const authService = {
 
 // Auth provider component
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(authService.getCurrentUser());
-  // const [loading, setLoading] = useState(false);
-
-  // Listen for auth state changes
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
+  
+  // Update auth state when localStorage changes
   useEffect(() => {
     const handleAuthChange = () => {
-      setUser(authService.getCurrentUser());
+      setCurrentUser(authService.getCurrentUser());
     };
 
     window.addEventListener('auth-change', handleAuthChange);
@@ -88,9 +87,9 @@ export function AuthProvider({ children }) {
 
   // Value to provide in context
   const value = {
-    user,
-    authService,
-    setUser,
+    user: currentUser,
+    setUser: setCurrentUser,
+    authService
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

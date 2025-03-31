@@ -28,8 +28,11 @@ const Login = () => {
       setError(null);
       
       const userData = await authService.login(formData);
-      setUser(userData); // Update context state
-      navigate('/');
+      
+      // Important: Update the context state directly
+      setUser(userData);
+      
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.detail || 'Login failed. Please check your credentials and try again.');
       console.error(err);

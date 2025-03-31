@@ -28,6 +28,10 @@ const Navbar = ({ onSearch, onClearSearch }) => {
       return () => {
         notificationService.disconnect();
       };
+    } else {
+      // Clear notifications when user logs out
+      setNotifications([]);
+      setUnreadCount(0);
     }
   }, [user]);
   

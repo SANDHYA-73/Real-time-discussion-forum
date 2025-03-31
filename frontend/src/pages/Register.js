@@ -60,8 +60,10 @@ const Register = () => {
         password: formData.password
       });
       
-      setUser(userData); // Update context
-      navigate('/');
+      // Important: Update the context state directly
+      setUser(userData);
+      
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.detail || 'Registration failed. Please try again.');
       console.error(err);
