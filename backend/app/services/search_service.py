@@ -76,14 +76,36 @@ class SearchService:
         
         return limited_results
     
+    # 
     def get_trending_topics(self, limit=10):
         """Get top trending topics"""
         cache_key = "trending_topics"
         cached = redis_client.get(cache_key)
         if cached:
-            return eval(cached)  # Convert string to list
+            try:
+                return eval(cached)  # Convert string to list
+            except:
+                # Invalid cache, continue to get fresh data
+                pass
         
+        # Get trending topics from heap
         trending = self.topic_heap.get_top_topics(limit)
+        
+        # If no trending topics yet, return some default ones
+        if not trending:
+            # Get recent topics from database
+            db = next(get_db())
+            recent_topics = db.query(Topic).order_by(Topic.created_at.desc()).limit(limit).all()
+            
+            # Convert to trending format
+            trending = [
+                {
+                    "id": topic.id,
+                    "title": topic.title,
+                    "score": topic.view_count or 1
+                }
+                for topic in recent_topics
+            ]
         
         # Cache results
         redis_client.setex(cache_key, 300, str(trending))  # 5 minutes TTL

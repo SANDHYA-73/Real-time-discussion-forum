@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import WebSocket, WebSocketDisconnect, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict
 import json
@@ -10,6 +10,8 @@ from app.schemas.notification import Notification as NotificationSchema
 from app.services.auth_service import get_current_user
 from app.models.user import User
 from app.config import settings
+from jose import JWTError, jwt
+from fastapi import APIRouter
 
 router = APIRouter()
 
@@ -81,38 +83,65 @@ def mark_all_notifications_as_read(
     return
 
 @router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    await websocket.accept()
-    
-    # Add to active connections
-    if user_id not in active_connections:
-        active_connections[user_id] = []
-    active_connections[user_id].append(websocket)
-    
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    user_id: int, 
+    token: str = Query(None)
+):
+    # Authenticate the WebSocket connection
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+        
     try:
-        # Create Redis pubsub
-        pubsub = redis_client.pubsub()
-        channel = f"user:{user_id}:notifications"
-        pubsub.subscribe(channel)
+        # Verify the token
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        token_user_id = int(payload.get("sub"))
         
-        # Listen for messages in the background
-        async def redis_listener():
-            for message in pubsub.listen():
-                if message["type"] == "message":
-                    payload = message["data"]
-                    await websocket.send_text(payload)
+        # Check if the token user ID matches the requested user ID
+        if token_user_id != user_id:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+            
+        # Accept the connection
+        await websocket.accept()
         
-        # Start Redis listener task
-        redis_task = asyncio.create_task(redis_listener())
+        # Add to active connections
+        if user_id not in active_connections:
+            active_connections[user_id] = []
+        active_connections[user_id].append(websocket)
         
-        # Handle WebSocket messages
-        while True:
-            data = await websocket.receive_text()
-            # Process client messages if needed
-    
-    except WebSocketDisconnect:
-        # Remove from active connections
-        if user_id in active_connections:
-            active_connections[user_id].remove(websocket)
-            if not active_connections[user_id]:
-                del active_connections[user_id]
+        try:
+            # Create Redis pubsub
+            pubsub = redis_client.pubsub()
+            channel = f"user:{user_id}:notifications"
+            pubsub.subscribe(channel)
+            
+            # Listen for messages in the background
+            async def redis_listener():
+                for message in pubsub.listen():
+                    if message["type"] == "message":
+                        payload = message["data"]
+                        await websocket.send_text(payload)
+            
+            # Start Redis listener task
+            redis_task = asyncio.create_task(redis_listener())
+            
+            # Handle WebSocket messages
+            while True:
+                data = await websocket.receive_text()
+                # Process client messages if needed
+        
+        except WebSocketDisconnect:
+            # Remove from active connections
+            if user_id in active_connections:
+                active_connections[user_id].remove(websocket)
+                if not active_connections[user_id]:
+                    del active_connections[user_id]
+    except JWTError:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        return

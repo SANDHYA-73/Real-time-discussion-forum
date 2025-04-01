@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import notificationService from '../services/notifications';
 import { useAuth } from '../services/auth';
@@ -10,40 +10,80 @@ const Navbar = ({ onSearch, onClearSearch }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsError, setNotificationsError] = useState(null);
   const navigate = useNavigate();
 
+  // Create a loadNotifications function using useCallback
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setNotificationsError(null);
+      const notifs = await notificationService.getNotifications();
+      
+      // Only update state if we actually got notifications back
+      if (Array.isArray(notifs)) {
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.is_read).length);
+      }
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+      setNotificationsError("Couldn't load notifications");
+      
+      // If we get an auth error, might need to refresh token or redirect to login
+      if (error.response && error.response.status === 401) {
+        // Optional: Handle auth error
+      }
+    }
+  }, [user]);
+
+  // Set up WebSocket connection and notification handling
   useEffect(() => {
+    let ws = null;
+    
     if (user) {
-      // Load notifications
+      // Initial load of notifications
       loadNotifications();
       
       // Connect to WebSocket for real-time notifications
-      const socket = notificationService.connect(user.id);
-      socket.onmessage = (event) => {
-        const newNotification = JSON.parse(event.data);
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      };
-      
-      return () => {
+      try {
+        ws = notificationService.connect(user.id);
+        
+        if (ws) {
+          ws.onmessage = (event) => {
+            try {
+              const newNotification = JSON.parse(event.data);
+              console.log('New notification received:', newNotification);
+              
+              // Add to notifications state
+              setNotifications(prev => [newNotification, ...prev]);
+              
+              // Increment unread count
+              setUnreadCount(prev => prev + 1);
+            } catch (error) {
+              console.error('Error processing notification:', error);
+            }
+          };
+        }
+      } catch (error) {
+        console.error('WebSocket connection error:', error);
+      }
+    }
+    
+    // Clean up function
+    return () => {
+      if (ws) {
         notificationService.disconnect();
-      };
-    } else {
-      // Clear notifications when user logs out
-      setNotifications([]);
-      setUnreadCount(0);
+      }
+    };
+  }, [user, loadNotifications]);
+
+  // Re-fetch notifications when notifications tab is opened
+  useEffect(() => {
+    if (showNotifications && user) {
+      loadNotifications();
     }
-  }, [user]);
-  
-  const loadNotifications = async () => {
-    try {
-      const notifs = await notificationService.getNotifications();
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.is_read).length);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
+  }, [showNotifications, user, loadNotifications]);
   
   const handleSearch = (e) => {
     e.preventDefault();
@@ -60,7 +100,17 @@ const Navbar = ({ onSearch, onClearSearch }) => {
   };
   
   const handleLogout = () => {
+    // Disconnect any active WebSockets before logout
+    notificationService.disconnect();
+    
+    // Perform logout
     authService.logout();
+    
+    // Clear our local notification state
+    setNotifications([]);
+    setUnreadCount(0);
+    
+    // Navigate to login page
     navigate('/login');
   };
   
@@ -209,25 +259,31 @@ const Navbar = ({ onSearch, onClearSearch }) => {
                             </button>
                           )}
                         </div>
-                        <ul className="list-group list-group-flush">
-                          {notifications.length > 0 ? (
-                            notifications.map(notification => (
-                              <li 
-                                key={notification.id} 
-                                className={`list-group-item ${!notification.is_read ? 'bg-light' : ''}`}
-                                onClick={() => handleNotificationClick(notification)}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                <div className="small text-muted">
-                                  {new Date(notification.created_at).toLocaleString()}
-                                </div>
-                                <div>{notification.message}</div>
-                              </li>
-                            ))
-                          ) : (
-                            <li className="list-group-item text-center">No notifications</li>
-                          )}
-                        </ul>
+                        {notificationsError ? (
+                          <div className="p-3 text-center text-danger">
+                            <small>{notificationsError}</small>
+                          </div>
+                        ) : (
+                          <ul className="list-group list-group-flush">
+                            {notifications.length > 0 ? (
+                              notifications.map(notification => (
+                                <li 
+                                  key={notification.id} 
+                                  className={`list-group-item ${!notification.is_read ? 'bg-light' : ''}`}
+                                  onClick={() => handleNotificationClick(notification)}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  <div className="small text-muted">
+                                    {new Date(notification.created_at).toLocaleString()}
+                                  </div>
+                                  <div>{notification.message}</div>
+                                </li>
+                              ))
+                            ) : (
+                              <li className="list-group-item text-center">No notifications</li>
+                            )}
+                          </ul>
+                        )}
                       </div>
                     </div>
                   )}
