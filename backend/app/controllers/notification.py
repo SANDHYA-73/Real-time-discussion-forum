@@ -6,7 +6,7 @@ import redis
 import asyncio
 from app.models import get_db
 from app.models.notification import Notification
-from app.schemas.notification import Notification as NotificationSchema
+from app.schema_validation.notification import Notification as NotificationSchema
 from app.services.auth_service import get_current_user
 from app.models.user import User
 from app.config import settings

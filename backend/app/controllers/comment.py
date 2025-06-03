@@ -5,7 +5,7 @@ from app.models import get_db
 from app.models.comment import Comment
 from app.models.topic import Topic
 from app.models.notification import Notification
-from app.schemas.comment import CommentCreate, Comment as CommentSchema, CommentUpdate
+from app.schema_validation.comment import CommentCreate, Comment as CommentSchema, CommentUpdate
 from app.services.auth_service import get_current_user
 from app.models.user import User
 from app.services.notification_service import publish_notification

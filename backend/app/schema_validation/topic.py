@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from app.schemas.user import User
+from app.schema_validation.user import User
 
 class TopicBase(BaseModel):
     title: str

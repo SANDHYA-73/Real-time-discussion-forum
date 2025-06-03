@@ -4,7 +4,7 @@ from typing import List
 from app.models import get_db
 from app.models.topic import Topic
 from app.models.comment import Comment
-from app.schemas.topic import TopicCreate, Topic as TopicSchema, TopicDetail, TopicUpdate
+from app.schema_validation.topic import TopicCreate, Topic as TopicSchema, TopicDetail, TopicUpdate
 from app.services.auth_service import get_current_user
 from app.models.user import User
 from app.services.search_service import search_service
